@@ -8,9 +8,10 @@
 package main
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -36,8 +37,14 @@ func fetch(url string, ch chan<- string) {
 		return
 	}
 
-	nbytes, err := io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close() // don't leak resources
+	file, err := os.Create(fmt.Sprintf("%x", md5.Sum([]byte(url))))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	nbytes, err := io.Copy(file, resp.Body)
+	defer resp.Body.Close() // don't leak resources
 	if err != nil {
 		ch <- fmt.Sprintf("while reading %s: %v", url, err)
 		return
