@@ -8,6 +8,7 @@
 package main
 
 import (
+	"bufio"
 	"crypto/md5"
 	"fmt"
 	"io"
@@ -20,13 +21,47 @@ import (
 func main() {
 	start := time.Now()
 	ch := make(chan string)
-	for _, url := range os.Args[1:] {
-		go fetch(url, ch) // start a goroutine
+	urlFile := "sites.txt"
+	if len(os.Args) > 1 {
+		urlFile = os.Args[1]
 	}
-	for range os.Args[1:] {
+	lines, urls := linesInFile(urlFile)
+	fetched := 0
+	for url := range urls {
+		go fetch(url, ch) // start a goroutine
+		fetched++
+		if fetched == lines {
+			close(urls)
+		}
+	}
+	for i := 0; i < lines; i++ {
 		fmt.Println(<-ch) // receive from channel ch
 	}
 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
+}
+
+func linesInFile(path string) (int, chan string) {
+	lines := 0
+	ch := make(chan string)
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines++
+		t := scanner.Text()
+		go func() {
+			ch <- t
+		}()
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return lines, ch
 }
 
 func fetch(url string, ch chan<- string) {
@@ -50,7 +85,8 @@ func fetch(url string, ch chan<- string) {
 		return
 	}
 	secs := time.Since(start).Seconds()
-	ch <- fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
+	res := fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
+	ch <- res
 }
 
 //!-
