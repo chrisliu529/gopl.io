@@ -20,29 +20,23 @@ import (
 
 func main() {
 	start := time.Now()
-	ch := make(chan string)
 	urlFile := "sites.txt"
 	if len(os.Args) > 1 {
 		urlFile = os.Args[1]
 	}
-	lines, urls := linesInFile(urlFile)
-	fetched := 0
-	for url := range urls {
-		go fetch(url, ch) // start a goroutine
-		fetched++
-		if fetched == lines {
-			close(urls)
-		}
+	urls := readLines(urlFile)
+	pages := make(chan string)
+	for _, url := range urls {
+		go fetch(url, pages) // start a goroutine
 	}
-	for i := 0; i < lines; i++ {
-		fmt.Println(<-ch) // receive from channel ch
+	for range urls {
+		fmt.Println(<-pages)
 	}
 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 }
 
-func linesInFile(path string) (int, chan string) {
-	lines := 0
-	ch := make(chan string)
+func readLines(path string) []string {
+	lines := []string{}
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -50,18 +44,13 @@ func linesInFile(path string) (int, chan string) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		lines++
-		t := scanner.Text()
-		go func() {
-			ch <- t
-		}()
+		lines = append(lines, scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-
-	return lines, ch
+	return lines
 }
 
 func fetch(url string, ch chan<- string) {
