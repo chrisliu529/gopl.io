@@ -34,7 +34,9 @@ func main() {
 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 }
 
-func urlReader(path string, urls chan<- string) {
+func urlReader(path string, out chan<- string) {
+	defer close(out)
+
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -42,9 +44,8 @@ func urlReader(path string, urls chan<- string) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		urls <- scanner.Text()
+		out <- scanner.Text()
 	}
-	defer close(urls)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
@@ -52,12 +53,13 @@ func urlReader(path string, urls chan<- string) {
 }
 
 func pageFetcher(urls <-chan string, out chan<- string) {
+	defer close(out)
 	start := time.Now()
 	for url := range urls {
 		resp, err := http.Get(url)
 		if err != nil {
 			out <- fmt.Sprint(err) // send to channel ch
-			return
+			continue
 		}
 
 		file, err := os.Create(fmt.Sprintf("%x", md5.Sum([]byte(url))))
@@ -70,12 +72,11 @@ func pageFetcher(urls <-chan string, out chan<- string) {
 		defer resp.Body.Close() // don't leak resources
 		if err != nil {
 			out <- fmt.Sprintf("while reading %s: %v", url, err)
-			return
+			continue
 		}
 		secs := time.Since(start).Seconds()
 		out <- fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
 	}
-	close(out)
 }
 
 func pagePrinter(pages <-chan string, done chan<- bool) {
