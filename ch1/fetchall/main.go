@@ -24,19 +24,17 @@ func main() {
 	if len(os.Args) > 1 {
 		urlFile = os.Args[1]
 	}
-	urls := readLines(urlFile)
+	urls := make(chan string)
+	go urlReader(urlFile, urls)
 	pages := make(chan string)
-	for _, url := range urls {
-		go fetch(url, pages) // start a goroutine
-	}
-	for range urls {
-		fmt.Println(<-pages)
-	}
+	go pageFetcher(urls, pages)
+	done := make(chan bool)
+	go pagePrinter(pages, done)
+	<-done
 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 }
 
-func readLines(path string) []string {
-	lines := []string{}
+func urlReader(path string, urls chan<- string) {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
@@ -44,38 +42,47 @@ func readLines(path string) []string {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
+		urls <- scanner.Text()
 	}
+	defer close(urls)
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	return lines
 }
 
-func fetch(url string, ch chan<- string) {
+func pageFetcher(urls <-chan string, out chan<- string) {
 	start := time.Now()
-	resp, err := http.Get(url)
-	if err != nil {
-		ch <- fmt.Sprint(err) // send to channel ch
-		return
-	}
+	for url := range urls {
+		resp, err := http.Get(url)
+		if err != nil {
+			out <- fmt.Sprint(err) // send to channel ch
+			return
+		}
 
-	file, err := os.Create(fmt.Sprintf("%x", md5.Sum([]byte(url))))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+		file, err := os.Create(fmt.Sprintf("%x", md5.Sum([]byte(url))))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
 
-	nbytes, err := io.Copy(file, resp.Body)
-	defer resp.Body.Close() // don't leak resources
-	if err != nil {
-		ch <- fmt.Sprintf("while reading %s: %v", url, err)
-		return
+		nbytes, err := io.Copy(file, resp.Body)
+		defer resp.Body.Close() // don't leak resources
+		if err != nil {
+			out <- fmt.Sprintf("while reading %s: %v", url, err)
+			return
+		}
+		secs := time.Since(start).Seconds()
+		out <- fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
 	}
-	secs := time.Since(start).Seconds()
-	res := fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
-	ch <- res
+	close(out)
+}
+
+func pagePrinter(pages <-chan string, done chan<- bool) {
+	for page := range pages {
+		fmt.Println(page)
+	}
+	done <- true
 }
 
 //!-
