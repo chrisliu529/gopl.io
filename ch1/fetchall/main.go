@@ -24,66 +24,59 @@ func main() {
 	if len(os.Args) > 1 {
 		urlFile = os.Args[1]
 	}
-	urls := make(chan string)
-	go urlReader(urlFile, urls)
-	pages := make(chan string)
-	go pageFetcher(urls, pages)
-	done := make(chan bool)
-	go pagePrinter(pages, done)
-	<-done
+	processUrls(urlFile, handlePage)
 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 }
 
-func urlReader(path string, out chan<- string) {
-	defer close(out)
-
+func processUrls(path string, handler func(string, chan<- bool)) {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	done := make(chan bool)
 	scanner := bufio.NewScanner(file)
+	n := 0
 	for scanner.Scan() {
-		out <- scanner.Text()
+		go handler(scanner.Text(), done)
+		n++
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+
+	for i := 0; i < n; i++ {
+		<-done
+	}
 }
 
-func pageFetcher(urls <-chan string, out chan<- string) {
-	defer close(out)
+func handlePage(url string, done chan<- bool) {
+	h := func(s string) {
+		fmt.Println(s)
+		done <- true
+	}
 	start := time.Now()
-	for url := range urls {
-		resp, err := http.Get(url)
-		if err != nil {
-			out <- fmt.Sprint(err) // send to channel ch
-			continue
-		}
-
-		file, err := os.Create(fmt.Sprintf("%x", md5.Sum([]byte(url))))
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer file.Close()
-
-		nbytes, err := io.Copy(file, resp.Body)
-		defer resp.Body.Close() // don't leak resources
-		if err != nil {
-			out <- fmt.Sprintf("while reading %s: %v", url, err)
-			continue
-		}
-		secs := time.Since(start).Seconds()
-		out <- fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
+	resp, err := http.Get(url)
+	if err != nil {
+		h(fmt.Sprint(err))
+		return
 	}
-}
 
-func pagePrinter(pages <-chan string, done chan<- bool) {
-	for page := range pages {
-		fmt.Println(page)
+	file, err := os.Create(fmt.Sprintf("%x", md5.Sum([]byte(url))))
+	if err != nil {
+		log.Fatal(err)
 	}
-	done <- true
+	defer file.Close()
+
+	nbytes, err := io.Copy(file, resp.Body)
+	defer resp.Body.Close() // don't leak resources
+	if err != nil {
+		h(fmt.Sprintf("while reading %s: %v", url, err))
+		return
+	}
+	secs := time.Since(start).Seconds()
+	h(fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url))
 }
 
 //!-
