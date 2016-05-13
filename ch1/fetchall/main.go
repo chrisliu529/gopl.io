@@ -31,18 +31,19 @@ func main() {
 }
 
 func processUrls(path string,
-	handler func(string, chan<- string, *sync.WaitGroup)) {
+	handler func(string, chan<- string, *sync.WaitGroup, chan<- int)) {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	pages := make(chan string, 256)
+	pool := make(chan int, 1024)
 	var wg sync.WaitGroup
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		wg.Add(1)
-		go handler(scanner.Text(), pages, &wg)
+		go handler(scanner.Text(), pages, &wg, pool)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -56,11 +57,14 @@ func processUrls(path string,
 
 	for page := range pages {
 		fmt.Println(page)
+		<-pool
 	}
 }
 
-func handlePage(url string, out chan<- string, wg *sync.WaitGroup) {
+func handlePage(url string, out chan<- string, wg *sync.WaitGroup,
+	pool chan<- int) {
 	defer wg.Done()
+	pool <- 1
 	start := time.Now()
 	if !strings.HasPrefix(url, "http") {
 		url = "https://" + url
