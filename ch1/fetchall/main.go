@@ -15,6 +15,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -28,38 +29,41 @@ func main() {
 	fmt.Printf("%.2fs elapsed\n", time.Since(start).Seconds())
 }
 
-func processUrls(path string, handler func(string, chan<- bool)) {
+func processUrls(path string,
+	handler func(string, chan<- string, *sync.WaitGroup)) {
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	done := make(chan bool)
+	pages := make(chan string, 4)
+	var wg sync.WaitGroup
 	scanner := bufio.NewScanner(file)
-	n := 0
 	for scanner.Scan() {
-		go handler(scanner.Text(), done)
-		n++
+		wg.Add(1)
+		go handler(scanner.Text(), pages, &wg)
 	}
 
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
 
-	for i := 0; i < n; i++ {
-		<-done
+	go func() {
+		wg.Wait()
+		close(pages)
+	}()
+
+	for page := range pages {
+		fmt.Println(page)
 	}
 }
 
-func handlePage(url string, done chan<- bool) {
-	h := func(s string) {
-		fmt.Println(s)
-		done <- true
-	}
+func handlePage(url string, out chan<- string, wg *sync.WaitGroup) {
+	defer wg.Done()
 	start := time.Now()
 	resp, err := http.Get(url)
 	if err != nil {
-		h(fmt.Sprint(err))
+		out <- fmt.Sprint(err)
 		return
 	}
 
@@ -72,11 +76,11 @@ func handlePage(url string, done chan<- bool) {
 	nbytes, err := io.Copy(file, resp.Body)
 	defer resp.Body.Close() // don't leak resources
 	if err != nil {
-		h(fmt.Sprintf("while reading %s: %v", url, err))
+		out <- fmt.Sprintf("while reading %s: %v", url, err)
 		return
 	}
 	secs := time.Since(start).Seconds()
-	h(fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url))
+	out <- fmt.Sprintf("%.2fs  %7d  %s", secs, nbytes, url)
 }
 
 //!-
