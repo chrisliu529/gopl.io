@@ -15,6 +15,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -36,7 +37,7 @@ func processUrls(path string,
 		log.Fatal(err)
 	}
 
-	pages := make(chan string, 4)
+	pages := make(chan string, 256)
 	var wg sync.WaitGroup
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -61,6 +62,9 @@ func processUrls(path string,
 func handlePage(url string, out chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	start := time.Now()
+	if !strings.HasPrefix(url, "http") {
+		url = "https://" + url
+	}
 	resp, err := http.Get(url)
 	if err != nil {
 		out <- fmt.Sprint(err)
