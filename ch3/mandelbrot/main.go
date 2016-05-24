@@ -8,11 +8,15 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
+	"log"
 	"math/cmplx"
 	"os"
+	"sync"
+	"time"
 )
 
 func main() {
@@ -21,17 +25,41 @@ func main() {
 		width, height          = 1024, 1024
 	)
 
-	img := image.NewRGBA(image.Rect(0, 0, width, height))
-	for py := 0; py < height; py++ {
-		y := float64(py)/height*(ymax-ymin) + ymin
-		for px := 0; px < width; px++ {
-			x := float64(px)/width*(xmax-xmin) + xmin
-			z := complex(x, y)
-			// Image point (px, py) represents complex value z.
-			img.Set(px, py, mandelbrot(z))
+	for gr := 1; gr <= 256; gr *= 2 {
+		fmt.Printf("=== using %d goroutines ===\n", gr)
+		s0 := time.Now()
+		img := image.NewRGBA(image.Rect(0, 0, width, height))
+		var wg sync.WaitGroup
+		for n := 0; n < gr; n++ {
+			f := func(ystart int, yend int) func() {
+				return func() {
+					defer wg.Done()
+					for py := ystart; py < yend; py++ {
+						y := float64(py)/height*(ymax-ymin) + ymin
+						for px := 0; px < width; px++ {
+							x := float64(px)/width*(xmax-xmin) + xmin
+							z := complex(x, y)
+							// Image point (px, py) represents complex value z.
+							img.Set(px, py, mandelbrot(z))
+						}
+					}
+				}
+			}
+			wg.Add(1)
+			go f(height*n/gr, height*(n+1)/gr)()
 		}
+		wg.Wait()
+		fmt.Printf("%.2fs gen img\n", time.Since(s0).Seconds())
+
+		s1 := time.Now()
+		file, err := os.Create(fmt.Sprintf("m%d.png", gr))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+		png.Encode(file, img) // NOTE: ignoring errors
+		fmt.Printf("%.2fs written img\n", time.Since(s1).Seconds())
 	}
-	png.Encode(os.Stdout, img) // NOTE: ignoring errors
 }
 
 func mandelbrot(z complex128) color.Color {
