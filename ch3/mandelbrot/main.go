@@ -31,22 +31,20 @@ func main() {
 		img := image.NewRGBA(image.Rect(0, 0, width, height))
 		var wg sync.WaitGroup
 		for n := 0; n < gr; n++ {
-			f := func(ystart int, yend int) func() {
-				return func() {
-					defer wg.Done()
-					for py := ystart; py < yend; py++ {
-						y := float64(py)/height*(ymax-ymin) + ymin
-						for px := 0; px < width; px++ {
-							x := float64(px)/width*(xmax-xmin) + xmin
-							z := complex(x, y)
-							// Image point (px, py) represents complex value z.
-							img.Set(px, py, mandelbrot(z))
-						}
+			f := func(ystart int, yend int) {
+				defer wg.Done()
+				for py := ystart; py < yend; py++ {
+					y := float64(py)/height*(ymax-ymin) + ymin
+					for px := 0; px < width; px++ {
+						x := float64(px)/width*(xmax-xmin) + xmin
+						z := complex(x, y)
+						// Image point (px, py) represents complex value z.
+						img.Set(px, py, mandelbrot(z))
 					}
 				}
 			}
 			wg.Add(1)
-			go f(height*n/gr, height*(n+1)/gr)()
+			go f(height*n/gr, height*(n+1)/gr)
 		}
 		wg.Wait()
 		fmt.Printf("%.2fs gen img\n", time.Since(s0).Seconds())
