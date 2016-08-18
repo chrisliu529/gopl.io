@@ -3,7 +3,10 @@
 
 package intset
 
-import "fmt"
+import (
+	"fmt"
+	"testing"
+)
 
 func Example_one() {
 	//!+main
@@ -47,4 +50,9 @@ func Example_two() {
 	// {1 9 42 144}
 	// {1 9 42 144}
 	// {[4398046511618 0 65536]}
+}
+
+func TestIntSet(t *testing.T) {
+	Example_one()
+	Example_two()
 }
