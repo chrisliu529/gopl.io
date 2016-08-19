@@ -4,55 +4,41 @@
 package intset
 
 import (
-	"fmt"
 	"testing"
 )
 
-func Example_one() {
-	//!+main
+func TestString(t *testing.T) {
 	var x, y IntSet
+	var exp string
 	x.Add(1)
 	x.Add(144)
 	x.Add(9)
-	fmt.Println(x.String()) // "{1 9 144}"
+	exp = "{1 9 144}"
+	if s := x.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
 
 	y.Add(9)
 	y.Add(42)
-	fmt.Println(y.String()) // "{9 42}"
+	exp = "{9 42}"
+	if s := y.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
 
 	x.UnionWith(&y)
-	fmt.Println(x.String()) // "{1 9 42 144}"
-
-	fmt.Println(x.Has(9), x.Has(123)) // "true false"
-	//!-main
-
-	// Output:
-	// {1 9 144}
-	// {9 42}
-	// {1 9 42 144}
-	// true false
+	exp = "{1 9 42 144}"
+	if s := x.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
 }
 
-func Example_two() {
+func TestHas(t *testing.T) {
 	var x IntSet
-	x.Add(1)
-	x.Add(144)
 	x.Add(9)
-	x.Add(42)
-
-	//!+note
-	fmt.Println(&x)         // "{1 9 42 144}"
-	fmt.Println(x.String()) // "{1 9 42 144}"
-	fmt.Println(x)          // "{[4398046511618 0 65536]}"
-	//!-note
-
-	// Output:
-	// {1 9 42 144}
-	// {1 9 42 144}
-	// {[4398046511618 0 65536]}
-}
-
-func TestIntSet(t *testing.T) {
-	Example_one()
-	Example_two()
+	if !x.Has(9) {
+		t.Errorf("should has 9")
+	}
+	if x.Has(123) {
+		t.Errorf("should not has 123")
+	}
 }
