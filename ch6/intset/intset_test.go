@@ -161,3 +161,13 @@ func TestCopy(t *testing.T) {
 		t.Errorf(`got %s, expect %s`, s, exp)
 	}
 }
+
+func TestAddAll(t *testing.T) {
+	var x IntSet
+	var exp string
+	x.AddAll(0, 1, 2, 3)
+	exp = "{0 1 2 3}"
+	if s := x.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+}

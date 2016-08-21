@@ -40,6 +40,12 @@ func (s *IntSet) Add(x int) {
 	s.words[word] |= 1 << bit
 }
 
+func (s *IntSet) AddAll(vals ...int) {
+	for _, val := range vals {
+		s.Add(val)
+	}
+}
+
 // UnionWith sets s to the union of s and t.
 func (s *IntSet) UnionWith(t *IntSet) {
 	for i, tword := range t.words {
