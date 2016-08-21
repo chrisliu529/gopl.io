@@ -4,6 +4,12 @@
 // See page 165.
 
 // Package intset provides a set of integers based on a bit vector.
+
+/*
+Chris Liu changes:
+* Add functions: Len(), Remove(), Clear(), Copy()
+*/
+
 package intset
 
 import (
@@ -71,3 +77,38 @@ func (s *IntSet) String() string {
 }
 
 //!-string
+
+func (s *IntSet) Len() int { //return the number of elements
+	n := 0
+	for _, word := range s.words {
+		if word == 0 {
+			continue
+		}
+		for j := 0; j < 64; j++ {
+			if word&(1<<uint(j)) != 0 {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+func (s *IntSet) Remove(x int) { // return x from the set
+	word, bit := x/64, uint(x%64)
+	if word >= len(s.words) {
+		return
+	}
+	s.words[word] &^= 1 << bit
+}
+
+func (s *IntSet) Clear() { // remove all elements from the set
+	s.words = nil
+}
+
+func (s *IntSet) Copy() *IntSet { // return a copy of the set
+	words2 := make([]uint64, s.Len())
+	for i, word := range s.words {
+		words2[i] = word
+	}
+	return &IntSet{words: words2}
+}
