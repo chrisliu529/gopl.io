@@ -7,7 +7,9 @@
 
 /*
 Chris Liu changes:
-* Add functions: Len(), Remove(), Clear(), Copy()
+* Add functions: Len(), Remove(), Clear(), Copy(),
+    AddAll(),
+    IntersectWith(), DifferenceWith(), SymmetricDifference()
 */
 
 package intset
@@ -51,6 +53,39 @@ func (s *IntSet) UnionWith(t *IntSet) {
 	for i, tword := range t.words {
 		if i < len(s.words) {
 			s.words[i] |= tword
+		} else {
+			s.words = append(s.words, tword)
+		}
+	}
+}
+
+// IntersectWith sets s to the intersection of s and t.
+func (s *IntSet) IntersectWith(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			s.words[i] &= tword
+		} else {
+			return
+		}
+	}
+}
+
+// DifferenceWith sets s to the difference of s and t.
+func (s *IntSet) DifferenceWith(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			s.words[i] &^= tword
+		} else {
+			return
+		}
+	}
+}
+
+// SymmetricDifference sets s to the symmetric difference of s and t.
+func (s *IntSet) SymmetricDifference(t *IntSet) {
+	for i, tword := range t.words {
+		if i < len(s.words) {
+			s.words[i] ^= tword
 		} else {
 			s.words = append(s.words, tword)
 		}

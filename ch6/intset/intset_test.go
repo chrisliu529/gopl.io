@@ -171,3 +171,57 @@ func TestAddAll(t *testing.T) {
 		t.Errorf(`got %s, expect %s`, s, exp)
 	}
 }
+
+func TestUnionWith(t *testing.T) {
+	var x, y IntSet
+	var exp string
+	x.AddAll(0, 1, 2, 3)
+	y.AddAll(2, 3, 4)
+	x.UnionWith(&y)
+	exp = "{0 1 2 3 4}"
+	if s := x.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+}
+
+func TestIntersectWith(t *testing.T) {
+	var x, y IntSet
+	var exp string
+	x.AddAll(0, 1, 2, 3)
+	y.AddAll(2, 3, 4)
+	x.IntersectWith(&y)
+	exp = "{2 3}"
+	if s := x.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+}
+
+func TestDifferenceWith(t *testing.T) {
+	var x, y IntSet
+	var exp string
+	x.AddAll(0, 1, 2, 3)
+	y.AddAll(2, 3, 4)
+	z := x.Copy()
+	x.DifferenceWith(&y)
+	exp = "{0 1}"
+	if s := x.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+	y.DifferenceWith(z)
+	exp = "{4}"
+	if s := y.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+}
+
+func TestSymmetricDifference(t *testing.T) {
+	var x, y IntSet
+	var exp string
+	x.AddAll(0, 1, 2, 3)
+	y.AddAll(2, 3, 4)
+	x.SymmetricDifference(&y)
+	exp = "{0 1 4}"
+	if s := x.String(); s != exp {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+}
