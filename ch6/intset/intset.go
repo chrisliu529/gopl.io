@@ -26,18 +26,22 @@ import (
 // An IntSet is a set of small non-negative integers.
 // Its zero value represents the empty set.
 type IntSet struct {
-	words []uint64
+	words []uint
 }
+
+const (
+	wordBits = 32<<(^uint(0)>>63)
+)
 
 // Has reports whether the set contains the non-negative value x.
 func (s *IntSet) Has(x int) bool {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/wordBits, uint(x%wordBits)
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
 // Add adds the non-negative value x to the set.
 func (s *IntSet) Add(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/wordBits, uint(x%wordBits)
 	for word >= len(s.words) {
 		s.words = append(s.words, 0)
 	}
@@ -106,12 +110,12 @@ func (s *IntSet) String() string {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < wordBits; j++ {
 			if word&(1<<uint(j)) != 0 {
 				if buf.Len() > len("{") {
 					buf.WriteByte(' ')
 				}
-				fmt.Fprintf(&buf, "%d", 64*i+j)
+				fmt.Fprintf(&buf, "%d", wordBits*i+j)
 			}
 		}
 	}
@@ -127,7 +131,7 @@ func (s *IntSet) Len() int { //return the number of elements
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < wordBits; j++ {
 			if word&(1<<uint(j)) != 0 {
 				n++
 			}
@@ -137,7 +141,7 @@ func (s *IntSet) Len() int { //return the number of elements
 }
 
 func (s *IntSet) Remove(x int) { // return x from the set
-	word, bit := x/64, uint(x%64)
+	word, bit := x/wordBits, uint(x%wordBits)
 	if word >= len(s.words) {
 		return
 	}
@@ -149,7 +153,7 @@ func (s *IntSet) Clear() { // remove all elements from the set
 }
 
 func (s *IntSet) Copy() *IntSet { // return a copy of the set
-	words2 := make([]uint64, s.Len())
+	words2 := make([]uint, s.Len())
 	for i, word := range s.words {
 		words2[i] = word
 	}
@@ -162,9 +166,9 @@ func (s *IntSet) Elems() []int {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < wordBits; j++ {
 			if word&(1<<uint(j)) != 0 {
-				elems = append(elems, 64*i+j)
+				elems = append(elems, wordBits*i+j)
 			}
 		}
 	}
