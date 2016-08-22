@@ -7,9 +7,11 @@
 
 /*
 Chris Liu changes:
-* Add functions: Len(), Remove(), Clear(), Copy(),
+* Add functions:
+    Len(), Remove(), Clear(), Copy(),
     AddAll(),
-    IntersectWith(), DifferenceWith(), SymmetricDifference()
+    IntersectWith(), DifferenceWith(), SymmetricDifference(),
+    Elems()
 */
 
 package intset
@@ -152,4 +154,19 @@ func (s *IntSet) Copy() *IntSet { // return a copy of the set
 		words2[i] = word
 	}
 	return &IntSet{words: words2}
+}
+
+func (s *IntSet) Elems() []int {
+	elems := []int{}
+	for i, word := range s.words {
+		if word == 0 {
+			continue
+		}
+		for j := 0; j < 64; j++ {
+			if word&(1<<uint(j)) != 0 {
+				elems = append(elems, 64*i+j)
+			}
+		}
+	}
+	return elems
 }

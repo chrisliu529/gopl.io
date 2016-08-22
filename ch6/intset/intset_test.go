@@ -225,3 +225,31 @@ func TestSymmetricDifference(t *testing.T) {
 		t.Errorf(`got %s, expect %s`, s, exp)
 	}
 }
+
+func TestElems(t *testing.T) {
+	var x IntSet
+	var exp []int
+	x.AddAll(0, 1, 2, 3)
+	exp = []int{0, 1, 2, 3}
+	if s := x.Elems(); !compareSlice(s, exp) {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+	x.AddAll(0, 1, 2, 3, 320)
+	exp = []int{0, 1, 2, 3, 320}
+	if s := x.Elems(); !compareSlice(s, exp) {
+		t.Errorf(`got %s, expect %s`, s, exp)
+	}
+
+}
+
+func compareSlice(s1, s2 []int) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+	for i, v := range s1 {
+		if v != s2[i] {
+			return false
+		}
+	}
+	return true
+}
