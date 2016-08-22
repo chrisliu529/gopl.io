@@ -253,3 +253,11 @@ func compareSlice(s1, s2 []int) bool {
 	}
 	return true
 }
+
+func BenchmarkAddThenRemove(b *testing.B) {
+	var x IntSet
+	for i := 0; i < b.N; i++ {
+		x.Add(i)
+		x.Remove(i)
+	}
+}
