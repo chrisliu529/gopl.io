@@ -154,10 +154,8 @@ func (s *IntSet) Clear() { // remove all elements from the set
 }
 
 func (s *IntSet) Copy() *IntSet { // return a copy of the set
-	words2 := make([]uint, s.Len())
-	for i, word := range s.words {
-		words2[i] = word
-	}
+	words2 := make([]uint, len(s.words))
+	copy(words2, s.words)
 	return &IntSet{words: words2}
 }
 
