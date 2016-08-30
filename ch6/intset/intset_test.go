@@ -242,6 +242,46 @@ func TestElems(t *testing.T) {
 
 }
 
+func TestProperContains(t *testing.T) {
+	var x, y IntSet
+	x.AddAll(0, 1, 2, 3)
+	if !x.ProperContains(&y) {
+		t.Errorf(`%s should proper contains %s`, &x, &y)
+	}
+	y.AddAll(0, 1, 2)
+	if !x.ProperContains(&y) {
+		t.Errorf(`%s should proper contains %s`, &x, &y)
+	}
+	y.Add(3)
+	if x.ProperContains(&y) {
+		t.Errorf(`%s should not proper contains %s`, &x, &y)
+	}
+	y.Add(4)
+	if !y.ProperContains(&x) {
+		t.Errorf(`%s should proper contains %s`, &y, &x)
+	}
+	x.Add(4)
+	if y.ProperContains(&x) {
+		t.Errorf(`%s should not proper contains %s`, &y, &x)
+	}
+	x.Clear()
+	if !y.ProperContains(&x) {
+		t.Errorf(`%s should proper contains %s`, &y, &x)
+	}
+	y.Clear()
+	if y.ProperContains(&x) {
+		t.Errorf(`%s should not proper contains %s`, &y, &x)
+	}
+	y.Add(100)
+	if !y.ProperContains(&x) {
+		t.Errorf(`%s proper contains %s`, &y, &x)
+	}
+	x.AddAll(1, 100)
+	if !x.ProperContains(&y) {
+		t.Errorf(`%s proper contains %s`, &x, &y)
+	}
+}
+
 func compareSlice(s1, s2 []int) bool {
 	if len(s1) != len(s2) {
 		return false

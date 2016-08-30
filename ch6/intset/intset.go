@@ -11,7 +11,8 @@ Chris Liu changes:
     Len(), Remove(), Clear(), Copy(),
     AddAll(),
     IntersectWith(), DifferenceWith(), SymmetricDifference(),
-    Elems()
+    Elems(),
+    Contains()
 */
 
 package intset
@@ -173,4 +174,16 @@ func (s *IntSet) Elems() []int {
 		}
 	}
 	return elems
+}
+
+func (s *IntSet) ProperContains(t *IntSet) bool {
+	if s.Len() <= t.Len() {
+		return false
+	}
+	for _, e := range t.Elems() {
+		if !s.Has(e) {
+			return false
+		}
+	}
+	return true
 }
