@@ -57,19 +57,19 @@ func TestLen(t *testing.T) {
 	var exp int
 	exp = 0
 	if i := x.Len(); i != exp {
-		t.Errorf(`got %s, expect %s`, i, exp)
+		t.Errorf(`got %d, expect %d`, i, exp)
 	}
 
 	x.Add(0)
 	exp++
 	if i := x.Len(); i != exp {
-		t.Errorf(`got %s, expect %s`, i, exp)
+		t.Errorf(`got %d, expect %d`, i, exp)
 	}
 
 	x.Add(9)
 	exp++
 	if i := x.Len(); i != exp {
-		t.Errorf(`got %s, expect %s`, i, exp)
+		t.Errorf(`got %d, expect %d`, i, exp)
 	}
 }
 
@@ -113,18 +113,18 @@ func TestClear(t *testing.T) {
 	var exp int
 	exp = 0
 	if i := x.Len(); i != exp {
-		t.Errorf(`got %s, expect %s`, i, exp)
+		t.Errorf(`got %d, expect %d`, i, exp)
 	}
 	x.Add(32)
 	x.Add(320)
 	exp = 2
 	if i := x.Len(); i != exp {
-		t.Errorf(`got %s, expect %s`, i, exp)
+		t.Errorf(`got %d, expect %d`, i, exp)
 	}
 	x.Clear()
 	exp = 0
 	if i := x.Len(); i != exp {
-		t.Errorf(`got %s, expect %s`, i, exp)
+		t.Errorf(`got %d, expect %d`, i, exp)
 	}
 }
 
@@ -232,12 +232,12 @@ func TestElems(t *testing.T) {
 	x.AddAll(0, 1, 2, 3)
 	exp = []int{0, 1, 2, 3}
 	if s := x.Elems(); !compareSlice(s, exp) {
-		t.Errorf(`got %s, expect %s`, s, exp)
+		t.Errorf(`got %d, expect %d`, s, exp)
 	}
 	x.AddAll(0, 1, 2, 3, 320)
 	exp = []int{0, 1, 2, 3, 320}
 	if s := x.Elems(); !compareSlice(s, exp) {
-		t.Errorf(`got %s, expect %s`, s, exp)
+		t.Errorf(`got %d, expect %d`, s, exp)
 	}
 
 }
